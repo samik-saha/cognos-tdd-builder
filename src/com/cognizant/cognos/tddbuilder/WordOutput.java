@@ -237,7 +237,7 @@ public class WordOutput implements ExportedOutputInterface{
         // write the file
         FileOutputStream out;
 		try {
-			mainWindow.log("Creating MS Word Document" + filename);
+			mainWindow.log("Creating MS Word Document " + filename);
 			out = new FileOutputStream(filename);
 	        doc.write(out);
 	        out.close();
