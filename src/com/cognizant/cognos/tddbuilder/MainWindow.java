@@ -42,7 +42,7 @@ import javax.swing.JTextArea;
 
 
 final class Prompt {
-	public String name, parameter, sort, required, format, filter;
+	public String name, parameter, sort, required, format,comment;
 }
 
 public class MainWindow {

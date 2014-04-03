@@ -177,10 +177,19 @@ public class WordOutput implements ExportedOutputInterface{
 
 	@Override
 	public void writePromptDetails(Prompt[] prompts) {
+		XWPFParagraph para;
+    	XWPFRun rh;
+		
 		if(prompts.length>0){
 			mainWindow.log("Writing prompt details to document...");
 			int nRows = prompts.length + 1;
-	    	int nCols = 8;
+	    	int nCols = 7;
+	    	
+	    	para = doc.createParagraph();
+	    	rh = para.createRun();
+	    	rh.setBold(true);
+	    	rh.setText("Prompts");
+	    	
 	        XWPFTable table = doc.createTable(nRows, nCols);
 
 	        // Set the table style. If the style is not defined, the table style
@@ -207,21 +216,51 @@ public class WordOutput implements ExportedOutputInterface{
 	            ctshd.setFill("A7BFDE");
 	        }
 	        
+	        /* Write table headers */
 	        table.getRow(0).getCell(0).setText("Parameter Name (Case Sensitive)");
 	        table.getRow(0).getCell(1).setText("Name in Package");
 	        table.getRow(0).getCell(2).setText("Sort");
 	        table.getRow(0).getCell(3).setText("Man/Opt");
 	        table.getRow(0).getCell(4).setText("Format");
-	        table.getRow(0).getCell(5).setText("Filter");
-	        table.getRow(0).getCell(6).setText("Test Value");
-	        table.getRow(0).getCell(7).setText("Comment (Pre selection, cascade,...)");
+	        table.getRow(0).getCell(5).setText("Test Value");
+	        table.getRow(0).getCell(6).setText("Comment (Pre selection, cascade,...)");
 	        
 	        
 	        for (int i=0; i<nRows-1;i++){
 	        	table.getRow(i+1).getCell(0).setText(prompts[i].parameter);
 	        	table.getRow(i+1).getCell(1).setText(prompts[i].name);
+	        	
+	        	/* Write sorting details */
+	        	// Replace null comments with blank text
+	        	prompts[i].sort=prompts[i].sort !=null?prompts[i].sort:"";
+	        	// Split text based on newline characters
+	        	String[] multilineSort=prompts[i].sort.split("\\r?\\n");
+	        	// Remove automatically created default paragraph
+	        	table.getRow(i+1).getCell(2).removeParagraph(0);
+	        	// Create a paragraph for each line
+	        	for (int j=0; j<multilineSort.length; j++){
+	        		para = table.getRow(i+1).getCell(2).addParagraph();
+	        		rh = para.createRun();
+	        		rh.setText(multilineSort[j]);
+	        	}
+	        	
 	        	table.getRow(i+1).getCell(3).setText(prompts[i].required=="true"?"Mandatory":"Optional");
+	        	
 	        	table.getRow(i+1).getCell(4).setText(prompts[i].format);
+	        	
+	        	/* write comments */
+	        	// Replace null comments with blank text
+	        	prompts[i].comment=prompts[i].comment !=null?prompts[i].comment:"";
+	        	// Split text based on newline characters
+	        	String[] multilineComment=prompts[i].comment.split("\\r?\\n");
+	        	// Remove automatically created default paragraph
+	        	table.getRow(i+1).getCell(6).removeParagraph(0);
+	        	// Create a paragraph for each line
+	        	for (int j=0; j<multilineComment.length; j++){
+	        		para = table.getRow(i+1).getCell(6).addParagraph();
+	        		rh = para.createRun();
+	        		rh.setText(multilineComment[j]);
+	        	}
 	        }
 	        mainWindow.log("Prompt details has been written to document.");
 		}

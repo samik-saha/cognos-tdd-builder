@@ -8,10 +8,10 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingWorker;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 public class ReportDataExtracter extends SwingWorker<Void, Void> {
@@ -33,10 +33,10 @@ public class ReportDataExtracter extends SwingWorker<Void, Void> {
 		mainWindow.log("Looking for prompts...");
 		extractPromptDetails();
 		setProgress(30);
-		Thread.sleep(2000);
+
 		outputFilename = exportedOutput.writeToFile();
 		setProgress(90);
-		Thread.sleep(2000);
+
 		setProgress(100);
 		return null;
 	}
@@ -62,31 +62,97 @@ public class ReportDataExtracter extends SwingWorker<Void, Void> {
 
 	private void extractPromptDetails() {
 		try {
-			NodeList selectValueNodes;
-			selectValueNodes = (NodeList) xPath.compile(
-					"//promptPages//selectValue").evaluate(
+			NodeList promptNodes;
+			promptNodes = (NodeList) xPath.compile(
+					"//promptPages//*[@parameter]").evaluate(
 					MainWindow.xmlDocument, XPathConstants.NODESET);
-			mainWindow.log(selectValueNodes.getLength() + " prompts found.");
-			prompts = new Prompt[selectValueNodes.getLength()];
-			for (int i = 0; i < selectValueNodes.getLength(); i++) {
-				NamedNodeMap attributes = selectValueNodes.item(i)
+			mainWindow.log(promptNodes.getLength() + " prompts found.");
+			prompts = new Prompt[promptNodes.getLength()];
+			for (int i = 0; i < promptNodes.getLength(); i++) {
+				Node promptNode = promptNodes.item(i);
+				NamedNodeMap attributes = promptNodes.item(i)
 						.getAttributes();
 				Prompt prompt = new Prompt();
 				prompt.name = attributes.getNamedItem("name") != null ? attributes
-						.getNamedItem("name").getNodeValue() : "";
+						.getNamedItem("name").getNodeValue() : "NA";
 				prompt.parameter = attributes.getNamedItem("parameter") != null ? attributes
 						.getNamedItem("parameter").getNodeValue() : "";
 				prompt.required = attributes.getNamedItem("required") != null ? attributes
-						.getNamedItem("required").getNodeValue() : "";
-				prompt.format = attributes.getNamedItem("selectValueUI") != null ? attributes
-						.getNamedItem("selectValueUI").getNodeValue() : "";
+						.getNamedItem("required").getNodeValue() : "true";
+				
+				/* Extract Prompt Format */
+			    String nodeName = promptNode.getNodeName();
+			    switch (nodeName){
+			    	case "selectValue":
+			    		String selectValueUI=attributes.getNamedItem("selectValueUI") != null ? attributes
+								.getNamedItem("selectValueUI").getNodeValue() : "";
+			    		if (selectValueUI.equals("radioGroup")){
+			    			prompt.format = "Radio Button Group Prompt";
+			    		}
+			    		else
+			    			prompt.format = "Dropdown List Prompt";
+			    		break;
+			    	case "textBox":
+			    		prompt.format = "Text Box Prompt";
+			    		break;
+			    	case "selectWithSearch":
+			    		prompt.format = "Select And Search Prompt";
+			    		break;
+			    	case "selectDate":
+			    		prompt.format = "Date Prompt";
+			    		break;
+			    	case "selectTime":
+			    		prompt.format = "Time Prompt";
+			    		break;
+			    	case "selectDateTime":
+			    		prompt.format = "Date/Time Prompt";
+			    		break;
+			    	case "selectInterval":
+			    		prompt.format = "Interval Prompt";
+			    		break;
+			    	case "selectWithTree":
+			    		prompt.format = "Tree Prompt";
+			    		break;
+			    	case "generatedPrompt":
+			    		prompt.format = "Generated Prompt";
+			    		break;
+			    	default: 
+			    		break;
+			    }
+			    
+			    /* Sort Order */
+			    //Check for sortList node
+			    Node sortList = (Node) xPath.compile("//promptPages//"+promptNode.getNodeName()+"[@parameter=\""+prompt.parameter+"\"]/sortList").evaluate(promptNode, XPathConstants.NODE);
+			    if(sortList != null){
+			    	NodeList sortItemList = sortList.getChildNodes();
+			    	prompt.sort="";
+			    	for(int j=0; j<sortItemList.getLength();j++){
+			    		Node sortItem = sortItemList.item(j);
+			    		String refDataItem =sortItem.getAttributes().getNamedItem("refDataItem").getTextContent();
+			    		String sortOrder=sortItem.getAttributes().getNamedItem("sortOrder") != null?
+			    				sortItem.getAttributes().getNamedItem("sortOrder").getTextContent():"ascending";
+			    		prompt.sort+=refDataItem+" ("+sortOrder+")\n";
+			    	}
+			    	
+			    }
+			    
+			    prompt.comment="";
+			    prompt.comment+=attributes.getNamedItem("cascadeOn") != null ? "Cascade on "+attributes
+						.getNamedItem("cascadeOn").getNodeValue()+"\n" : "";
+						
+				prompt.comment+=attributes.getNamedItem("prePopulateIfParentOptional") != null ? "Pre-populated":"";
+			    
+
 				prompts[i] = prompt;
+				
+			
 			}
 
 			exportedOutput.writePromptDetails(prompts);
 
-		} catch (XPathExpressionException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
+			System.out.println(e.getMessage());
 		}
 	}
 }
