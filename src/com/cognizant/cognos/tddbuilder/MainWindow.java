@@ -10,6 +10,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -21,6 +23,7 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
+import javax.swing.JTextArea;
 import javax.swing.JToolBar;
 import javax.swing.ProgressMonitor;
 import javax.swing.UIManager;
@@ -38,11 +41,13 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import javax.swing.JTextArea;
-
 
 final class Prompt {
 	public String name, parameter, sort, required, format,comment;
+}
+
+final class ConditionalVariable {
+	public String name, type, logic, values, comment;
 }
 
 public class MainWindow {
@@ -251,6 +256,15 @@ public class MainWindow {
 				htmlText += "<li>" + pageName + "</li>";
 			}
 			htmlText += "</ul>";
+			String modelPath=(String) xPath.compile("/report/modelPath/text()")
+					.evaluate(xmlDocument, XPathConstants.STRING);
+			Pattern p = Pattern.compile("package\\[@name='(.*?)'\\]");
+			Matcher m = p.matcher(modelPath);
+			String packageName="";
+			while(m.find()){
+				packageName = m.group(1);
+			}
+			htmlText += "<b>Package Name:</b> "+packageName;
 
 			specPane.setText(htmlText);
 		} catch (XPathExpressionException ex) {

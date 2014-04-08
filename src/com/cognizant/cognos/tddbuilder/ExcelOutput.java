@@ -14,4 +14,11 @@ public class ExcelOutput implements ExportedOutputInterface {
 		
 	}
 
+	@Override
+	public void writeConditionalVariableDetails(
+			ConditionalVariable[] conditionalVariable) {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

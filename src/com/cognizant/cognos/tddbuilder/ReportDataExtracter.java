@@ -17,6 +17,7 @@ import org.w3c.dom.NodeList;
 public class ReportDataExtracter extends SwingWorker<Void, Void> {
 	ExportedOutputInterface exportedOutput;
 	Prompt[] prompts;
+	ConditionalVariable[] conditionalVariables;
 	XPath xPath;
 	MainWindow mainWindow;
 	String outputFilename;
@@ -33,7 +34,8 @@ public class ReportDataExtracter extends SwingWorker<Void, Void> {
 		mainWindow.log("Looking for prompts...");
 		extractPromptDetails();
 		setProgress(30);
-
+		extractConditionalVariables();
+		setProgress(40);
 		outputFilename = exportedOutput.writeToFile();
 		setProgress(90);
 
@@ -123,9 +125,9 @@ public class ReportDataExtracter extends SwingWorker<Void, Void> {
 			    /* Sort Order */
 			    //Check for sortList node
 			    Node sortList = (Node) xPath.compile("//promptPages//"+promptNode.getNodeName()+"[@parameter=\""+prompt.parameter+"\"]/sortList").evaluate(promptNode, XPathConstants.NODE);
+			    prompt.sort="";
 			    if(sortList != null){
 			    	NodeList sortItemList = sortList.getChildNodes();
-			    	prompt.sort="";
 			    	for(int j=0; j<sortItemList.getLength();j++){
 			    		Node sortItem = sortItemList.item(j);
 			    		String refDataItem =sortItem.getAttributes().getNamedItem("refDataItem").getTextContent();
@@ -133,8 +135,11 @@ public class ReportDataExtracter extends SwingWorker<Void, Void> {
 			    				sortItem.getAttributes().getNamedItem("sortOrder").getTextContent():"ascending";
 			    		prompt.sort+=refDataItem+" ("+sortOrder+")\n";
 			    	}
-			    	
 			    }
+			    else {
+			    	prompt.sort = "NA";
+			    }
+			    
 			    
 			    prompt.comment="";
 			    prompt.comment+=attributes.getNamedItem("cascadeOn") != null ? "Cascade on "+attributes
@@ -154,5 +159,59 @@ public class ReportDataExtracter extends SwingWorker<Void, Void> {
 			e.printStackTrace();
 			System.out.println(e.getMessage());
 		}
+	}
+
+	private void extractConditionalVariables(){
+		Node reportExprNode, variableValuesNode;
+		try {
+			NodeList reportVariableNodes;
+			reportVariableNodes = (NodeList) xPath.compile(
+					"//reportVariables/reportVariable").evaluate(
+					MainWindow.xmlDocument, XPathConstants.NODESET);
+			mainWindow.log(reportVariableNodes.getLength() + " report variables found.");
+			conditionalVariables = new ConditionalVariable[reportVariableNodes.getLength()];
+			for (int i = 0; i < reportVariableNodes.getLength(); i++) {
+				Node reportVariableNode = reportVariableNodes.item(i);
+				NamedNodeMap attributes = reportVariableNode.getAttributes();
+				ConditionalVariable conditionalVariable = new ConditionalVariable();
+				conditionalVariable.name = attributes.getNamedItem("name").getTextContent();
+				conditionalVariable.type = attributes.getNamedItem("type").getTextContent();
+				NodeList childNodes = reportVariableNode.getChildNodes();
+				reportExprNode = null;
+				variableValuesNode = null;
+				for(int j = 0; j < childNodes.getLength(); j++){
+					if(childNodes.item(j).getNodeName() == "reportExpression"){
+						reportExprNode = childNodes.item(j);
+					}
+					else if (childNodes.item(j).getNodeName() == "variableValues"){
+						variableValuesNode = childNodes.item(j);
+					}
+				}
+				
+				conditionalVariable.logic = reportExprNode != null? reportExprNode.getTextContent():"";
+				
+				conditionalVariable.values = "";
+				if (variableValuesNode != null){
+					NodeList variableValues = variableValuesNode.getChildNodes();
+					for (int k = 0; k < variableValues.getLength(); k++){
+						Node variableValue = variableValues.item(k);
+						if(variableValue.getNodeName() == "variableValue"){
+							String value = variableValue.getAttributes()!=null?
+									variableValue.getAttributes().getNamedItem("value").getNodeValue():"";
+
+							conditionalVariable.values += (conditionalVariable.values !=""? ", ":"")+value;
+						}
+					}
+				}
+				
+				conditionalVariables[i]=conditionalVariable;
+			}
+			
+			exportedOutput.writeConditionalVariableDetails(conditionalVariables);
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+		
 	}
 }

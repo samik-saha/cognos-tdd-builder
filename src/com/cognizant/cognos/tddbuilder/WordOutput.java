@@ -188,7 +188,7 @@ public class WordOutput implements ExportedOutputInterface{
 	    	para = doc.createParagraph();
 	    	rh = para.createRun();
 	    	rh.setBold(true);
-	    	rh.setText("Prompts");
+	    	rh.setText("Report Prompts");
 	    	
 	        XWPFTable table = doc.createTable(nRows, nCols);
 
@@ -271,6 +271,10 @@ public class WordOutput implements ExportedOutputInterface{
 		
 	}
 	
+	
+	
+	
+	
 	@Override
 	public String writeToFile(){
         // write the file
@@ -293,6 +297,71 @@ public class WordOutput implements ExportedOutputInterface{
 			return null;
 		} 
 
+	}
+
+	@Override
+	public void writeConditionalVariableDetails(
+			ConditionalVariable[] conditionalVariables) {
+		XWPFParagraph para;
+    	XWPFRun rh;
+		
+		if(conditionalVariables.length>0){
+			mainWindow.log("Writing report variable details to document...");
+			int nRows = conditionalVariables.length + 1;
+	    	int nCols = 5;
+	    	
+	    	doc.createParagraph();
+	    	para = doc.createParagraph();
+	    	rh = para.createRun();
+	    	rh.setBold(true);
+	    	rh.setText("Conditional Variables");
+	    	
+	        XWPFTable table = doc.createTable(nRows, nCols);
+
+	        // Set the table style. If the style is not defined, the table style
+	        // will become "Normal".
+	        CTTblPr tblPr = table.getCTTbl().getTblPr();
+	        CTString styleStr = tblPr.addNewTblStyle();
+	        styleStr.setVal("StyledTable");
+	        
+	        // Get a list of the rows in the table
+	        XWPFTableRow row = table.getRow(0);
+	        
+	        List<XWPFTableCell> cells = row.getTableCells();
+	        for (XWPFTableCell cell : cells) {
+	    		// get a table cell properties element (tcPr)
+	    		CTTcPr tcpr = cell.getCTTc().addNewTcPr();
+	    		// set vertical alignment to "center"
+	    		CTVerticalJc va = tcpr.addNewVAlign();
+	    		va.setVal(STVerticalJc.CENTER);
+
+	    		// create cell color element
+	    		CTShd ctshd = tcpr.addNewShd();
+	            ctshd.setColor("auto");
+	            ctshd.setVal(STShd.CLEAR);
+	            ctshd.setFill("A7BFDE");
+	        }
+	        
+	        /* Write table headers */
+	        table.getRow(0).getCell(0).setText("Name");
+	        table.getRow(0).getCell(1).setText("Type");
+	        table.getRow(0).getCell(2).setText("Logic");
+	        table.getRow(0).getCell(3).setText("Values");
+	        table.getRow(0).getCell(4).setText("Comment");
+	        
+	        for (int i=0; i<nRows-1;i++){
+	        	table.getRow(i+1).getCell(0).setText(conditionalVariables[i].name);
+	        	table.getRow(i+1).getCell(1).setText(conditionalVariables[i].type);
+	        	table.getRow(i+1).getCell(2).setText(conditionalVariables[i].logic);
+	        	table.getRow(i+1).getCell(3).setText(conditionalVariables[i].values);
+	        	
+	        }
+	        mainWindow.log("Report variable details has been written to document.");
+		}
+		else{
+			mainWindow.log("No report variable details is wrriten to document.");
+		}
+		
 	}
 
 }
