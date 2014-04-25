@@ -50,8 +50,21 @@ final class ConditionalVariable {
 	public String name, type, logic, values, comment;
 }
 
-public class MainWindow {
+final class QueryItem{
+	public String dataItem, nameInPackage, order, sortLevel, aggregation, drill, comments;
+}
 
+final class Query{
+	public String queryName;
+	public QueryItem[] queryItems;
+}
+
+final class ReportPage{
+		public String queryName;
+		public Query[] queries;
+}
+
+public class MainWindow {
 	private JFrame frmCognosTddBuilder;
 	protected static Document xmlDocument;
 	private XPath xPath;

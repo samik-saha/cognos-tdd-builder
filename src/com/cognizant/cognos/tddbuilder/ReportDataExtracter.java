@@ -214,4 +214,8 @@ public class ReportDataExtracter extends SwingWorker<Void, Void> {
 		}
 		
 	}
+	private void extractReportPages(){
+		
+	}
+
 }

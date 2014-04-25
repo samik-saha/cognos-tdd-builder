@@ -21,4 +21,10 @@ public class ExcelOutput implements ExportedOutputInterface {
 		
 	}
 
+	@Override
+	public void writeReportPageDetails(ReportPage[] reportPage) {
+		// TODO Auto-generated method stub
+		
+	}
+
 }
