@@ -1,5 +1,6 @@
 package com.cognizant.cognos.tddbuilder;
 
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -9,7 +10,9 @@ import javax.swing.JOptionPane;
 
 import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
 import org.apache.poi.xwpf.usermodel.UnderlinePatterns;
+import org.apache.poi.xwpf.usermodel.XWPFAbstractNum;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFNumbering;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.apache.poi.xwpf.usermodel.XWPFTable;
@@ -30,11 +33,21 @@ public class WordOutput implements ExportedOutputInterface{
 	MainWindow mainWindow;
 	XWPFDocument doc;
 	String filename;
+	XWPFNumbering numbering;
 	
 	public WordOutput(MainWindow mainWindow, String filename) {
 		this.mainWindow=mainWindow;
 		this.filename=filename;
-		doc = new XWPFDocument();
+		
+		try {
+			doc = new XWPFDocument(new FileInputStream("template.docx"));
+		}
+		catch(IOException ex){
+			System.err.println(ex.getMessage());
+			doc = new XWPFDocument();
+		}
+		
+		numbering = doc.createNumbering();
 	}
 
 	public void createSimpleTable() throws Exception {
@@ -186,8 +199,8 @@ public class WordOutput implements ExportedOutputInterface{
 	    	int nCols = 7;
 	    	
 	    	para = doc.createParagraph();
+	    	para.setStyle("Heading2");
 	    	rh = para.createRun();
-	    	rh.setBold(true);
 	    	rh.setText("Report Prompts");
 	    	
 	        XWPFTable table = doc.createTable(nRows, nCols);
@@ -312,8 +325,8 @@ public class WordOutput implements ExportedOutputInterface{
 	    	
 	    	doc.createParagraph();
 	    	para = doc.createParagraph();
+	    	para.setStyle("Heading2");
 	    	rh = para.createRun();
-	    	rh.setBold(true);
 	    	rh.setText("Conditional Variables");
 	    	
 	        XWPFTable table = doc.createTable(nRows, nCols);
@@ -368,6 +381,95 @@ public class WordOutput implements ExportedOutputInterface{
 	public void writeReportPageDetails(ReportPage[] reportPage) {
 		// TODO Auto-generated method stub
 		
+	}
+
+	@Override
+	public void writeQueryDetails(Query[] queries) {
+		XWPFParagraph para;
+    	XWPFRun rh;
+    	doc.createParagraph();
+    	para = doc.createParagraph();
+    	para.setStyle("Heading2");
+    	rh = para.createRun();
+    	rh.setText("Report Queries");
+		
+		for(int i = 0; i < queries.length; i++){
+			writeSingleQueryDetails(queries[i]);
+		}	
+	}
+	
+	private void writeSingleQueryDetails(Query query){
+		XWPFParagraph para;
+    	XWPFRun rh;
+    	
+		if(query.dataItems.length>0){
+			mainWindow.log("Writing query details to document for "+query.queryName+"...");
+			int nRows = query.dataItems.length + 1;
+	    	int nCols = 3;
+	    	
+	    	doc.createParagraph();
+	    	para = doc.createParagraph();
+	    	para.setStyle("Heading3");
+	    	rh = para.createRun();
+	    	rh.setText("Query Name: " + query.queryName);
+	    	
+	        XWPFTable table = doc.createTable(nRows, nCols);
+
+	        // Set the table style. If the style is not defined, the table style
+	        // will become "Normal".
+	        CTTblPr tblPr = table.getCTTbl().getTblPr();
+	        CTString styleStr = tblPr.addNewTblStyle();
+	        styleStr.setVal("StyledTable");
+	        
+	        // Get a list of the rows in the table
+	        XWPFTableRow row = table.getRow(0);
+	        
+	        List<XWPFTableCell> cells = row.getTableCells();
+	        for (XWPFTableCell cell : cells) {
+	    		// get a table cell properties element (tcPr)
+	    		CTTcPr tcpr = cell.getCTTc().addNewTcPr();
+	    		// set vertical alignment to "center"
+	    		CTVerticalJc va = tcpr.addNewVAlign();
+	    		va.setVal(STVerticalJc.CENTER);
+
+	    		// create cell color element
+	    		CTShd ctshd = tcpr.addNewShd();
+	            ctshd.setColor("auto");
+	            ctshd.setVal(STShd.CLEAR);
+	            ctshd.setFill("A7BFDE");
+	        }
+	        
+	        /* Write table headers */
+	        table.getRow(0).getCell(0).setText("DataItem");
+	        table.getRow(0).getCell(1).setText("Name in Package");
+	        table.getRow(0).getCell(2).setText("Comment");
+	        
+	        for (int i=0; i<nRows-1;i++){
+	        	table.getRow(i+1).getCell(0).setText(query.dataItems[i].dataItem);
+	        	table.getRow(i+1).getCell(1).setText(query.dataItems[i].nameInPackage);
+	        }
+	        
+	        /* Write query filters */
+	        
+	        if (query.filters.length > 0){
+	        	para = doc.createParagraph();
+		    	rh = para.createRun();
+		    	rh.setBold(true);
+		    	rh.setText("Filters:");
+		    	
+		    	
+		        for (int i = 0; i < query.filters.length; i++){
+		        	para = doc.createParagraph();
+		        	rh = para.createRun();
+		        	rh.setText(query.filters[i]);
+		        }
+	        }
+	        
+	        mainWindow.log("Query details for " + query.queryName + " has been written to document.");
+		}
+		else{
+			mainWindow.log("Query " + query.queryName + "does not have any data item.");
+		}
 	}
 
 }

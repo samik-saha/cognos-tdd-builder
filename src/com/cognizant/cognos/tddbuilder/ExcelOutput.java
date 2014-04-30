@@ -27,4 +27,10 @@ public class ExcelOutput implements ExportedOutputInterface {
 		
 	}
 
+	@Override
+	public void writeQueryDetails(Query[] queries) {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

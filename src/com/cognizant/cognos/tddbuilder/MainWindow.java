@@ -50,13 +50,14 @@ final class ConditionalVariable {
 	public String name, type, logic, values, comment;
 }
 
-final class QueryItem{
+final class DataItem{
 	public String dataItem, nameInPackage, order, sortLevel, aggregation, drill, comments;
 }
 
 final class Query{
 	public String queryName;
-	public QueryItem[] queryItems;
+	public DataItem[] dataItems;
+	public String[] filters;
 }
 
 final class ReportPage{

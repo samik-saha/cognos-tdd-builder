@@ -18,6 +18,7 @@ public class ReportDataExtracter extends SwingWorker<Void, Void> {
 	ExportedOutputInterface exportedOutput;
 	Prompt[] prompts;
 	ConditionalVariable[] conditionalVariables;
+	Query[] queries;
 	XPath xPath;
 	MainWindow mainWindow;
 	String outputFilename;
@@ -36,6 +37,8 @@ public class ReportDataExtracter extends SwingWorker<Void, Void> {
 		setProgress(30);
 		extractConditionalVariables();
 		setProgress(40);
+		extractReportPages();
+		extractReportQueries();
 		outputFilename = exportedOutput.writeToFile();
 		setProgress(90);
 
@@ -215,7 +218,61 @@ public class ReportDataExtracter extends SwingWorker<Void, Void> {
 		
 	}
 	private void extractReportPages(){
-		
+		try{
+			NodeList pageNodes;
+			pageNodes = (NodeList)xPath.compile("//reportPages/page/@name").evaluate(MainWindow.xmlDocument,XPathConstants.NODESET);
+			
+			for(int i = 0; i < pageNodes.getLength(); i++){
+				//System.out.println(pageNodes.item(i).getTextContent());
+			}
+		}
+		catch(Exception e){
+			
+		}
+	}
+	
+	private void extractReportQueries(){
+		try{
+			NodeList queryNodes;
+			queryNodes = (NodeList)xPath.compile("/report/queries/query").evaluate(MainWindow.xmlDocument,XPathConstants.NODESET);
+			
+			queries = new Query[queryNodes.getLength()];
+			for(int i = 0; i < queryNodes.getLength(); i++){
+				Node queryNode = queryNodes.item(i);
+				Query query = new Query();
+				query.queryName = queryNode.getAttributes().getNamedItem("name").getTextContent();
+				NodeList dataItemNodes;
+				dataItemNodes = (NodeList) xPath.compile("/report/queries/query[@name=\""+
+						query.queryName + "\"]/selection/dataItem").evaluate(MainWindow.xmlDocument,XPathConstants.NODESET);
+				query.dataItems = new DataItem[dataItemNodes.getLength()];
+				for (int j = 0; j < dataItemNodes.getLength(); j++){
+					Node dataItemNode = dataItemNodes.item(j);
+					DataItem dataItem = new DataItem();
+					dataItem.dataItem = dataItemNode.getAttributes().getNamedItem("name").getTextContent();
+					NodeList childNodes = dataItemNode.getChildNodes();
+					dataItem.nameInPackage = "";
+					for (int k = 0; k < childNodes.getLength();k++)
+						if  (childNodes.item(k).getNodeName() == "expression")
+							dataItem.nameInPackage = childNodes.item(k).getTextContent();
+					query.dataItems[j]=dataItem;
+				}
+				NodeList filterNodes = (NodeList) xPath.compile("/report/queries/query[@name=\""+
+						query.queryName + "\"]/detailFilters/detailFilter").evaluate(MainWindow.xmlDocument,XPathConstants.NODESET);
+				query.filters = new String[filterNodes.getLength()];
+				for (int j = 0; j < filterNodes.getLength(); j++){
+					Node filterNode = filterNodes.item(j);
+					NodeList childNodes = filterNode.getChildNodes();
+					for (int k = 0; k < childNodes.getLength();k++)
+						if  (childNodes.item(k).getNodeName() == "filterExpression")
+							query.filters[j]=childNodes.item(k).getTextContent();
+				}
+				queries[i] = query;
+			}
+			exportedOutput.writeQueryDetails(queries);
+		}
+		catch(Exception e){
+			
+		}
 	}
 
 }
